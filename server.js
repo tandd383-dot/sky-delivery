@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const http = require('http');
@@ -118,6 +119,17 @@ async function initDatabase() {
 
 initDatabase().catch(err => {
   console.error('数据库初始化失败:', err.message);
+  console.error('错误码:', err.code);
+  console.error('请检查:');
+  console.error('  1. 阿里云RDS白名单是否添加了你当前IP');
+  console.error('  2. 数据库用户名和密码是否正确');
+  console.error('  3. 数据库 order_system 是否已创建');
+  console.error('当前连接配置:', {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    database: process.env.DB_NAME
+  });
   process.exit(1);
 });
 
