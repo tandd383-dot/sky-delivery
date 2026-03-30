@@ -3,8 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --production
 COPY . .
-RUN mkdir -p /app/data/uploads
+RUN mkdir -p /app/uploads
 EXPOSE 3000
-ENV DATA_DIR=/app/data
+ENV UPLOADS_DIR=/app/uploads
 ENV NODE_ENV=production
 CMD ["node", "server.js"]

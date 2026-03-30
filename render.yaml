@@ -5,9 +5,17 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     envVars:
-      - key: DATA_DIR
-        value: /opt/render/project/src/data
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: friend_order
     disk:
-      name: data
-      mountPath: /opt/render/project/src/data
+      name: uploads
+      mountPath: /opt/render/project/src/uploads
       sizeGB: 1
