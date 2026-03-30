@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点餐 - 好友点餐系统</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta name="wechat-share" content="分享给好友一起点餐！">
+</head>
+<body>
+    <div class="container user-container">
+        <header>
+            <h1>🍽️ 好友点餐</h1>
+            <div class="user-info">
+                <span id="user-name-display"></span>
+                <span class="points">积分: <span id="user-points">0</span></span>
+            </div>
+        </header>
+
+        <div id="login-section" class="login-section">
+            <div class="login-form">
+                <h2>欢迎来到点餐系统</h2>
+                <input type="text" id="user-name" placeholder="请输入你的名字" required>
+                <button onclick="login()" class="btn btn-primary btn-large">开始点餐</button>
+            </div>
+        </div>
+
+        <div id="menu-section" class="menu-section hidden">
+            <div id="menu-list" class="menu-grid"></div>
+            
+            <div class="cart-section">
+                <h3>我的购物车</h3>
+                <div id="cart-items" class="cart-items"></div>
+                <div class="cart-total">
+                    <span>总计: <span id="cart-total">0</span> 积分</span>
+                    <button onclick="submitOrder()" class="btn btn-primary btn-large">提交订单</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="orders-section" class="orders-section hidden">
+            <h2>我的订单</h2>
+            <div id="my-orders" class="my-orders"></div>
+            <button onclick="showMenu()" class="btn btn-secondary">返回菜单</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="user.js"></script>
+</body>
+</html>

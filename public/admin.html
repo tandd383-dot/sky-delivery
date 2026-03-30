@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员 - 好友点餐系统</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍽️ 好友点餐系统 - 管理员</h1>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('menu')">菜单管理</button>
+                <button class="tab-btn" onclick="showTab('orders')">订单管理</button>
+                <button class="tab-btn" onclick="showTab('users')">用户管理</button>
+                <button class="tab-btn" onclick="showTab('share')">分享</button>
+            </div>
+        </header>
+
+        <div id="menu-tab" class="tab-content active">
+            <div class="section">
+                <h2>添加菜品</h2>
+                <form id="add-menu-form" class="form">
+                    <input type="text" id="menu-name" placeholder="菜品名称" required>
+                    <textarea id="menu-description" placeholder="菜品描述" rows="3"></textarea>
+                    <input type="number" id="menu-price" placeholder="积分价格" required min="1">
+                    <input type="file" id="menu-image" accept="image/*">
+                    <button type="submit" class="btn btn-primary">添加菜品</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <h2>当前菜单</h2>
+                <div id="menu-list" class="menu-grid"></div>
+            </div>
+        </div>
+
+        <div id="orders-tab" class="tab-content">
+            <div class="section">
+                <h2>实时订单</h2>
+                <div id="orders-list" class="orders-list"></div>
+            </div>
+        </div>
+
+        <div id="users-tab" class="tab-content">
+            <div class="section">
+                <h2>用户管理</h2>
+                <div id="users-list" class="users-list"></div>
+            </div>
+        </div>
+
+        <div id="share-tab" class="tab-content">
+            <div class="section">
+                <h2>分享点餐链接</h2>
+                <div class="share-container">
+                    <p>将以下链接分享给好友：</p>
+                    <div class="share-link">
+                        <input type="text" id="share-url" readonly>
+                        <button onclick="copyShareLink()" class="btn btn-secondary">复制链接</button>
+                    </div>
+                    <div id="qr-code" class="qr-code"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>编辑菜品</h2>
+            <form id="edit-menu-form" class="form">
+                <input type="hidden" id="edit-menu-id">
+                <input type="text" id="edit-menu-name" placeholder="菜品名称" required>
+                <textarea id="edit-menu-description" placeholder="菜品描述" rows="3"></textarea>
+                <input type="number" id="edit-menu-price" placeholder="积分价格" required min="1">
+                <input type="hidden" id="edit-existing-image">
+                <input type="file" id="edit-menu-image" accept="image/*">
+                <button type="submit" class="btn btn-primary">保存修改</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
