@@ -2,48 +2,112 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>点餐 - 好友点餐系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>好友点餐</title>
     <link rel="stylesheet" href="styles.css">
-    <meta name="wechat-share" content="分享给好友一起点餐！">
+    <link rel="stylesheet" href="user.css">
+    <meta name="wechat-share" content="好友点餐，快来下单吧！">
 </head>
 <body>
-    <div class="container user-container">
-        <header>
-            <h1>🍽️ 好友点餐</h1>
-            <div class="user-info">
-                <span id="user-name-display"></span>
-                <span class="points">积分: <span id="user-points">0</span></span>
-            </div>
-        </header>
-
-        <div id="login-section" class="login-section">
-            <div class="login-form">
-                <h2>欢迎来到点餐系统</h2>
-                <input type="text" id="user-name" placeholder="请输入你的名字" required>
-                <button onclick="login()" class="btn btn-primary btn-large">开始点餐</button>
-            </div>
-        </div>
-
-        <div id="menu-section" class="menu-section hidden">
-            <div id="menu-list" class="menu-grid"></div>
-            
-            <div class="cart-section">
-                <h3>我的购物车</h3>
-                <div id="cart-items" class="cart-items"></div>
-                <div class="cart-total">
-                    <span>总计: <span id="cart-total">0</span> 积分</span>
-                    <button onclick="submitOrder()" class="btn btn-primary btn-large">提交订单</button>
+    <div id="app">
+        <div id="login-page" class="page active">
+            <div class="login-bg">
+                <div class="login-logo">
+                    <div class="logo-icon">🍜</div>
+                    <h1>好友点餐</h1>
+                    <p>用积分，享美食</p>
+                </div>
+                <div class="login-box">
+                    <input type="text" id="user-name" placeholder="请输入你的昵称" maxlength="12">
+                    <button onclick="login()" class="mt-btn mt-btn-primary mt-btn-block">开始点餐</button>
                 </div>
             </div>
         </div>
 
-        <div id="orders-section" class="orders-section hidden">
-            <h2>我的订单</h2>
-            <div id="my-orders" class="my-orders"></div>
-            <button onclick="showMenu()" class="btn btn-secondary">返回菜单</button>
+        <div id="menu-page" class="page">
+            <div class="mt-header">
+                <div class="mt-header-search">
+                    <span class="search-icon">🔍</span>
+                    <span>搜索菜品</span>
+                </div>
+                <div class="mt-header-user" onclick="showOrders()">
+                    <span class="user-avatar" id="user-avatar-text">我</span>
+                </div>
+            </div>
+
+            <div class="mt-points-bar">
+                <div class="points-info">
+                    <span class="points-label">我的积分</span>
+                    <span class="points-value" id="user-points">0</span>
+                </div>
+                <div class="points-user" id="user-name-display">未登录</div>
+            </div>
+
+            <div class="mt-menu-layout">
+                <div id="menu-list" class="mt-dish-list"></div>
+            </div>
+
+            <div id="cart-float" class="mt-cart-float hidden" onclick="toggleCartPanel()">
+                <div class="cart-float-icon">
+                    <span class="cart-badge" id="cart-badge">0</span>
+                    🛒
+                </div>
+                <div class="cart-float-info">
+                    <span class="cart-float-total">¥<span id="cart-total">0</span></span>
+                    <span class="cart-float-hint">另需配送费¥0</span>
+                </div>
+                <div class="cart-float-btn" onclick="event.stopPropagation(); submitOrder()">
+                    去下单
+                </div>
+            </div>
+
+            <div id="cart-panel-mask" class="mt-mask hidden" onclick="toggleCartPanel()"></div>
+            <div id="cart-panel" class="mt-cart-panel hidden">
+                <div class="cart-panel-header">
+                    <span>已选商品</span>
+                    <span class="cart-clear" onclick="clearCart()">清空</span>
+                </div>
+                <div id="cart-items" class="cart-panel-list"></div>
+            </div>
+
+            <div class="mt-bottom-nav">
+                <div class="nav-item active">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">点餐</span>
+                </div>
+                <div class="nav-item" onclick="showOrders()">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">订单</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="orders-page" class="page">
+            <div class="mt-header">
+                <div class="mt-header-back" onclick="showMenu()">← 返回</div>
+                <div class="mt-header-title">我的订单</div>
+                <div class="mt-header-placeholder"></div>
+            </div>
+            <div class="mt-order-tabs">
+                <div class="order-tab active" data-status="all" onclick="filterOrders('all', this)">全部</div>
+                <div class="order-tab" data-status="pending" onclick="filterOrders('pending', this)">待处理</div>
+                <div class="order-tab" data-status="completed" onclick="filterOrders('completed', this)">已完成</div>
+            </div>
+            <div id="my-orders" class="mt-orders-list"></div>
+            <div class="mt-bottom-nav">
+                <div class="nav-item" onclick="showMenu()">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">点餐</span>
+                </div>
+                <div class="nav-item active">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">订单</span>
+                </div>
+            </div>
         </div>
     </div>
+
+    <div id="toast" class="mt-toast hidden"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="user.js"></script>

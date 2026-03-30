@@ -4,6 +4,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 
@@ -12,34 +13,42 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
 
 const PORT = process.env.PORT || 3000;
 
+const DATA_DIR = process.env.DATA_DIR || '.';
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+const DB_PATH = path.join(DATA_DIR, 'orders.db');
+
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/')
+    cb(null, UPLOADS_DIR);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname))
+    cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
 
 const upload = multer({ storage: storage });
 
-const db = new sqlite3.Database('./orders.db', (err) => {
+const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('数据库连接失败:', err.message);
   } else {
-    console.log('已连接到SQLite数据库');
+    console.log('已连接到SQLite数据库: ' + DB_PATH);
     initDatabase();
   }
 });
@@ -94,7 +103,7 @@ function initDatabase() {
 app.post('/api/users', (req, res) => {
   const { name } = req.body;
   const userId = uuidv4();
-  
+
   db.run("INSERT INTO users (id, name, points) VALUES (?, ?, ?)", [userId, name, 0], function(err) {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -115,11 +124,11 @@ app.get('/api/users', (req, res) => {
 app.post('/api/users/:id/points', (req, res) => {
   const { id } = req.params;
   const { points, operation } = req.body;
-  
-  const query = operation === 'add' 
+
+  const query = operation === 'add'
     ? "UPDATE users SET points = points + ? WHERE id = ?"
     : "UPDATE users SET points = ? WHERE id = ?";
-  
+
   db.run(query, [points, id], function(err) {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -132,7 +141,7 @@ app.post('/api/menu', upload.single('image'), (req, res) => {
   const { name, description, price } = req.body;
   const itemId = uuidv4();
   const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
-  
+
   db.run("INSERT INTO menu_items (id, name, description, price, image_url) VALUES (?, ?, ?, ?, ?)",
     [itemId, name, description, parseInt(price), imageUrl], function(err) {
       if (err) {
@@ -155,7 +164,7 @@ app.put('/api/menu/:id', upload.single('image'), (req, res) => {
   const { id } = req.params;
   const { name, description, price } = req.body;
   const imageUrl = req.file ? `/uploads/${req.file.filename}` : req.body.existing_image;
-  
+
   db.run("UPDATE menu_items SET name = ?, description = ?, price = ?, image_url = ? WHERE id = ?",
     [name, description, parseInt(price), imageUrl, id], function(err) {
       if (err) {
@@ -167,7 +176,7 @@ app.put('/api/menu/:id', upload.single('image'), (req, res) => {
 
 app.delete('/api/menu/:id', (req, res) => {
   const { id } = req.params;
-  
+
   db.run("DELETE FROM menu_items WHERE id = ?", [id], function(err) {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -180,31 +189,31 @@ app.post('/api/orders', (req, res) => {
   const { user_id, items } = req.body;
   const orderId = uuidv4();
   const totalPoints = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
+
   db.get("SELECT points FROM users WHERE id = ?", [user_id], (err, user) => {
     if (err || !user || user.points < totalPoints) {
       return res.status(400).json({ error: '积分不足' });
     }
-    
+
     db.serialize(() => {
       db.run("BEGIN TRANSACTION");
-      
+
       db.run("INSERT INTO orders (id, user_id, items, total_points) VALUES (?, ?, ?, ?)",
         [orderId, user_id, JSON.stringify(items), totalPoints]);
-      
+
       items.forEach(item => {
         db.run("INSERT INTO order_items (id, order_id, menu_item_id, quantity, price) VALUES (?, ?, ?, ?, ?)",
           [uuidv4(), orderId, item.id, item.quantity, item.price]);
       });
-      
+
       db.run("UPDATE users SET points = points - ? WHERE id = ?", [totalPoints, user_id]);
-      
+
       db.run("COMMIT", (err) => {
         if (err) {
           db.run("ROLLBACK");
           return res.status(500).json({ error: err.message });
         }
-        
+
         io.emit('new_order', { order_id: orderId, user_id, items, total_points });
         res.json({ id: orderId, total_points: totalPoints });
       });
@@ -213,9 +222,9 @@ app.post('/api/orders', (req, res) => {
 });
 
 app.get('/api/orders', (req, res) => {
-  db.all(`SELECT o.*, u.name as user_name 
-          FROM orders o 
-          JOIN users u ON o.user_id = u.id 
+  db.all(`SELECT o.*, u.name as user_name
+          FROM orders o
+          JOIN users u ON o.user_id = u.id
           ORDER BY o.created_at DESC`, (err, rows) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -227,7 +236,7 @@ app.get('/api/orders', (req, res) => {
 app.put('/api/orders/:id/status', (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  
+
   db.run("UPDATE orders SET status = ? WHERE id = ?", [status, id], function(err) {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -239,12 +248,12 @@ app.put('/api/orders/:id/status', (req, res) => {
 
 io.on('connection', (socket) => {
   console.log('新客户端连接');
-  
+
   socket.on('disconnect', () => {
     console.log('客户端断开连接');
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`服务器运行在 http://localhost:${PORT}`);
 });

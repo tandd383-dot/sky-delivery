@@ -2,84 +2,122 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理员 - 好友点餐系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>管理后台 - 好友点餐</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="user.css">
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🍽️ 好友点餐系统 - 管理员</h1>
-            <div class="tabs">
-                <button class="tab-btn active" onclick="showTab('menu')">菜单管理</button>
-                <button class="tab-btn" onclick="showTab('orders')">订单管理</button>
-                <button class="tab-btn" onclick="showTab('users')">用户管理</button>
-                <button class="tab-btn" onclick="showTab('share')">分享</button>
-            </div>
-        </header>
+    <div id="app">
+        <div class="mt-header">
+            <div class="mt-header-title">🍜 管理后台</div>
+            <div class="mt-header-placeholder"></div>
+        </div>
 
-        <div id="menu-tab" class="tab-content active">
-            <div class="section">
-                <h2>添加菜品</h2>
-                <form id="add-menu-form" class="form">
+        <div class="admin-tabs">
+            <div class="admin-tab active" data-tab="menu" onclick="showTab('menu', this)">
+                <span class="admin-tab-icon">📋</span>
+                <span>菜单</span>
+            </div>
+            <div class="admin-tab" data-tab="orders" onclick="showTab('orders', this)">
+                <span class="admin-tab-icon">📦</span>
+                <span>订单</span>
+            </div>
+            <div class="admin-tab" data-tab="users" onclick="showTab('users', this)">
+                <span class="admin-tab-icon">👥</span>
+                <span>用户</span>
+            </div>
+            <div class="admin-tab" data-tab="share" onclick="showTab('share', this)">
+                <span class="admin-tab-icon">🔗</span>
+                <span>分享</span>
+            </div>
+        </div>
+
+        <div id="menu-tab" class="admin-tab-content active">
+            <div class="admin-card">
+                <div class="admin-card-title">添加菜品</div>
+                <form id="add-menu-form" class="admin-form">
                     <input type="text" id="menu-name" placeholder="菜品名称" required>
-                    <textarea id="menu-description" placeholder="菜品描述" rows="3"></textarea>
+                    <textarea id="menu-description" placeholder="菜品描述（选填）" rows="2"></textarea>
                     <input type="number" id="menu-price" placeholder="积分价格" required min="1">
-                    <input type="file" id="menu-image" accept="image/*">
-                    <button type="submit" class="btn btn-primary">添加菜品</button>
+                    <div class="upload-area" onclick="document.getElementById('menu-image').click()">
+                        <input type="file" id="menu-image" accept="image/*" hidden>
+                        <span id="upload-text">📷 点击上传图片</span>
+                        <img id="upload-preview" class="upload-preview hidden" alt="">
+                    </div>
+                    <button type="submit" class="mt-btn mt-btn-primary mt-btn-block">添加菜品</button>
                 </form>
             </div>
 
-            <div class="section">
-                <h2>当前菜单</h2>
-                <div id="menu-list" class="menu-grid"></div>
+            <div class="admin-card">
+                <div class="admin-card-title">当前菜单</div>
+                <div id="menu-list" class="admin-menu-list"></div>
             </div>
         </div>
 
-        <div id="orders-tab" class="tab-content">
-            <div class="section">
-                <h2>实时订单</h2>
-                <div id="orders-list" class="orders-list"></div>
+        <div id="orders-tab" class="admin-tab-content">
+            <div class="admin-card">
+                <div class="admin-card-title">实时订单</div>
+                <div id="orders-list" class="admin-orders-list"></div>
             </div>
         </div>
 
-        <div id="users-tab" class="tab-content">
-            <div class="section">
-                <h2>用户管理</h2>
-                <div id="users-list" class="users-list"></div>
+        <div id="users-tab" class="admin-tab-content">
+            <div class="admin-card">
+                <div class="admin-card-title">用户管理</div>
+                <div id="users-list" class="admin-users-list"></div>
             </div>
         </div>
 
-        <div id="share-tab" class="tab-content">
-            <div class="section">
-                <h2>分享点餐链接</h2>
-                <div class="share-container">
-                    <p>将以下链接分享给好友：</p>
-                    <div class="share-link">
-                        <input type="text" id="share-url" readonly>
-                        <button onclick="copyShareLink()" class="btn btn-secondary">复制链接</button>
+        <div id="share-tab" class="admin-tab-content">
+            <div class="admin-card">
+                <div class="admin-card-title">分享给好友</div>
+                <div class="share-box">
+                    <p class="share-desc">将以下链接发送给好友，好友打开即可点餐：</p>
+                    <div class="share-link-box">
+                        <input type="text" id="share-url" readonly class="share-input">
+                        <button onclick="copyShareLink()" class="mt-btn mt-btn-primary mt-btn-sm">复制</button>
                     </div>
-                    <div id="qr-code" class="qr-code"></div>
+                    <div class="share-qr">
+                        <div id="qr-code"></div>
+                        <p class="share-qr-hint">扫码分享给好友</p>
+                    </div>
+                    <div class="share-admin-link">
+                        <p class="share-desc">管理员入口（仅自己使用）：</p>
+                        <div class="share-link-box">
+                            <input type="text" id="admin-url" readonly class="share-input">
+                            <button onclick="copyAdminLink()" class="mt-btn mt-btn-sm" style="background:#333;color:white;">复制</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2>编辑菜品</h2>
-            <form id="edit-menu-form" class="form">
+    <div id="edit-modal" class="mt-mask hidden">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <span>编辑菜品</span>
+                <span class="edit-modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="edit-menu-form" class="admin-form">
                 <input type="hidden" id="edit-menu-id">
                 <input type="text" id="edit-menu-name" placeholder="菜品名称" required>
-                <textarea id="edit-menu-description" placeholder="菜品描述" rows="3"></textarea>
+                <textarea id="edit-menu-description" placeholder="菜品描述" rows="2"></textarea>
                 <input type="number" id="edit-menu-price" placeholder="积分价格" required min="1">
                 <input type="hidden" id="edit-existing-image">
-                <input type="file" id="edit-menu-image" accept="image/*">
-                <button type="submit" class="btn btn-primary">保存修改</button>
+                <div class="upload-area" onclick="document.getElementById('edit-menu-image').click()">
+                    <input type="file" id="edit-menu-image" accept="image/*" hidden>
+                    <span id="edit-upload-text">📷 点击更换图片</span>
+                    <img id="edit-upload-preview" class="upload-preview hidden" alt="">
+                </div>
+                <button type="submit" class="mt-btn mt-btn-primary mt-btn-block">保存修改</button>
             </form>
         </div>
     </div>
+
+    <div id="toast" class="mt-toast hidden"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="admin.js"></script>
