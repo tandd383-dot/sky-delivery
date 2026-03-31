@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>管理后台 - 好友点餐</title>
+    <title>管理后台 - 小赖菜单</title>
     <link rel="stylesheet" href="user.css">
     <link rel="stylesheet" href="admin.css">
 </head>
@@ -12,7 +12,10 @@
         <div class="admin-header">
             <div class="admin-header-inner">
                 <span class="admin-header-icon">🍜</span>
-                <span class="admin-header-title">管理后台</span>
+                <span class="admin-header-title">小赖菜单 · 管理后台</span>
+            </div>
+            <div id="new-order-badge" class="new-order-badge hidden" onclick="showTab('orders', document.querySelector('[data-tab=orders]'))">
+                <span id="new-order-count">0</span> 新订单
             </div>
         </div>
 
@@ -29,6 +32,10 @@
                 <span class="admin-tab-icon">👥</span>
                 <span>用户</span>
             </div>
+            <div class="admin-tab" data-tab="stats" onclick="showTab('stats', this)">
+                <span class="admin-tab-icon">📊</span>
+                <span>统计</span>
+            </div>
             <div class="admin-tab" data-tab="share" onclick="showTab('share', this)">
                 <span class="admin-tab-icon">🔗</span>
                 <span>分享</span>
@@ -41,7 +48,33 @@
                 <form id="add-menu-form" class="admin-form">
                     <input type="text" id="menu-name" placeholder="菜品名称" required>
                     <textarea id="menu-description" placeholder="菜品描述（选填）" rows="2"></textarea>
-                    <input type="number" id="menu-price" placeholder="积分价格" required min="1">
+                    <div class="admin-form-row">
+                        <input type="number" id="menu-price" placeholder="积分价格" required min="1" class="admin-form-half">
+                        <select id="menu-category" class="admin-form-half admin-select">
+                            <option value="主食">主食</option>
+                            <option value="炒菜">炒菜</option>
+                            <option value="凉菜">凉菜</option>
+                            <option value="汤类">汤类</option>
+                            <option value="小吃">小吃</option>
+                            <option value="饮品">饮品</option>
+                            <option value="甜点">甜点</option>
+                        </select>
+                    </div>
+                    <div class="admin-form-row">
+                        <select id="menu-spice" class="admin-form-half admin-select">
+                            <option value="可选">辣度：可选</option>
+                            <option value="不可选">辣度：不可选</option>
+                            <option value="微辣">辣度：微辣</option>
+                            <option value="中辣">辣度：中辣</option>
+                            <option value="特辣">辣度：特辣</option>
+                        </select>
+                        <label class="admin-checkbox-label admin-form-half">
+                            <input type="checkbox" id="menu-recommended"> 设为推荐
+                        </label>
+                    </div>
+                    <div class="admin-form-row">
+                        <input type="text" id="menu-taste-options" placeholder="口味选项（逗号分隔，如：少盐,少油,加蛋）" class="admin-form-full">
+                    </div>
                     <div class="upload-area" onclick="document.getElementById('menu-image').click()">
                         <input type="file" id="menu-image" accept="image/*" hidden>
                         <span id="upload-text">📷 点击上传图片</span>
@@ -68,6 +101,34 @@
             <div class="admin-card">
                 <div class="admin-card-title">用户管理</div>
                 <div id="users-list" class="admin-users-list"></div>
+            </div>
+        </div>
+
+        <div id="stats-tab" class="admin-tab-content">
+            <div class="admin-card">
+                <div class="admin-card-title">数据概览</div>
+                <div class="stats-grid">
+                    <div class="stat-card stat-orders">
+                        <div class="stat-num" id="stat-total-orders">0</div>
+                        <div class="stat-label">总订单</div>
+                    </div>
+                    <div class="stat-card stat-today">
+                        <div class="stat-num" id="stat-today-orders">0</div>
+                        <div class="stat-label">今日订单</div>
+                    </div>
+                    <div class="stat-card stat-users">
+                        <div class="stat-num" id="stat-total-users">0</div>
+                        <div class="stat-label">注册用户</div>
+                    </div>
+                    <div class="stat-card stat-sales">
+                        <div class="stat-num" id="stat-total-sales">0</div>
+                        <div class="stat-label">总消费积分</div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card">
+                <div class="admin-card-title">热门菜品 TOP5</div>
+                <div id="top-items" class="top-items-list"></div>
             </div>
         </div>
 
@@ -106,7 +167,36 @@
                 <input type="hidden" id="edit-menu-id">
                 <input type="text" id="edit-menu-name" placeholder="菜品名称" required>
                 <textarea id="edit-menu-description" placeholder="菜品描述" rows="2"></textarea>
-                <input type="number" id="edit-menu-price" placeholder="积分价格" required min="1">
+                <div class="admin-form-row">
+                    <input type="number" id="edit-menu-price" placeholder="积分价格" required min="1" class="admin-form-half">
+                    <select id="edit-menu-category" class="admin-form-half admin-select">
+                        <option value="主食">主食</option>
+                        <option value="炒菜">炒菜</option>
+                        <option value="凉菜">凉菜</option>
+                        <option value="汤类">汤类</option>
+                        <option value="小吃">小吃</option>
+                        <option value="饮品">饮品</option>
+                        <option value="甜点">甜点</option>
+                    </select>
+                </div>
+                <div class="admin-form-row">
+                    <select id="edit-menu-spice" class="admin-form-half admin-select">
+                        <option value="可选">辣度：可选</option>
+                        <option value="不可选">辣度：不可选</option>
+                        <option value="微辣">辣度：微辣</option>
+                        <option value="中辣">辣度：中辣</option>
+                        <option value="特辣">辣度：特辣</option>
+                    </select>
+                    <label class="admin-checkbox-label admin-form-half">
+                        <input type="checkbox" id="edit-menu-recommended"> 设为推荐
+                    </label>
+                </div>
+                <div class="admin-form-row">
+                    <input type="text" id="edit-menu-taste-options" placeholder="口味选项（逗号分隔）" class="admin-form-full">
+                </div>
+                <label class="admin-checkbox-label">
+                    <input type="checkbox" id="edit-menu-available"> 上架中
+                </label>
                 <input type="hidden" id="edit-existing-image">
                 <div class="upload-area" onclick="document.getElementById('edit-menu-image').click()">
                     <input type="file" id="edit-menu-image" accept="image/*" hidden>

@@ -1,28 +1,39 @@
+let newOrderCount = 0;
 const socket = io();
+
+socket.on('new_order', (data) => {
+    newOrderCount++;
+    const badge = document.getElementById('new-order-badge');
+    const countEl = document.getElementById('new-order-count');
+    badge.classList.remove('hidden');
+    countEl.textContent = newOrderCount;
+    loadOrders();
+    loadStats();
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('小赖菜单 - 新订单', { body: `收到新订单，共${data.total_points}积分` });
+    }
+});
+
+socket.on('order_status_update', () => {
+    loadOrders();
+    loadStats();
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     loadMenu();
     loadOrders();
     loadUsers();
-    generateShareLinks();
+    loadStats();
+    initShareLinks();
 
-    document.getElementById('add-menu-form').addEventListener('submit', addMenuItem);
-    document.getElementById('edit-menu-form').addEventListener('submit', updateMenuItem);
+    document.getElementById('add-menu-form').addEventListener('submit', handleAddMenu);
+    document.getElementById('edit-menu-form').addEventListener('submit', handleEditMenu);
 
     document.getElementById('menu-image').addEventListener('change', function(e) {
-        previewImage(e.target, 'upload-preview', 'upload-text');
+        previewImage(e, 'upload-preview', 'upload-text');
     });
     document.getElementById('edit-menu-image').addEventListener('change', function(e) {
-        previewImage(e.target, 'edit-upload-preview', 'edit-upload-text');
-    });
-
-    socket.on('new_order', function(data) {
-        loadOrders();
-        showToast('🔔 新订单提醒');
-    });
-
-    socket.on('order_status_update', function(data) {
-        loadOrders();
+        previewImage(e, 'edit-upload-preview', 'edit-upload-text');
     });
 });
 
@@ -33,182 +44,193 @@ function showToast(msg) {
     setTimeout(() => t.classList.add('hidden'), 1800);
 }
 
-function previewImage(input, previewId, textId) {
-    const file = input.files[0];
+function showTab(tabName, el) {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(tabName + '-tab').classList.add('active');
+    if (tabName === 'orders') {
+        newOrderCount = 0;
+        document.getElementById('new-order-badge').classList.add('hidden');
+    }
+    if (tabName === 'stats') loadStats();
+}
+
+function previewImage(e, previewId, textId) {
+    const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById(previewId);
-            preview.src = e.target.result;
-            preview.classList.remove('hidden');
+        reader.onload = function(ev) {
+            document.getElementById(previewId).src = ev.target.result;
+            document.getElementById(previewId).classList.remove('hidden');
             document.getElementById(textId).classList.add('hidden');
         };
         reader.readAsDataURL(file);
     }
 }
 
-function showTab(tabName, el) {
-    document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(tabName + '-tab').classList.add('active');
-    el.classList.add('active');
+async function handleAddMenu(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('name', document.getElementById('menu-name').value);
+    formData.append('description', document.getElementById('menu-description').value);
+    formData.append('price', document.getElementById('menu-price').value);
+    formData.append('category', document.getElementById('menu-category').value);
+    formData.append('spice_level', document.getElementById('menu-spice').value);
+    formData.append('is_recommended', document.getElementById('menu-recommended').checked);
+
+    const tasteStr = document.getElementById('menu-taste-options').value.trim();
+    if (tasteStr) {
+        formData.append('taste_options', JSON.stringify(tasteStr.split(/[,，]/).map(s => s.trim()).filter(Boolean)));
+    } else {
+        formData.append('taste_options', '[]');
+    }
+
+    const imageFile = document.getElementById('menu-image').files[0];
+    if (imageFile) formData.append('image', imageFile);
+
+    try {
+        const response = await fetch('/api/menu', { method: 'POST', body: formData });
+        if (response.ok) {
+            showToast('添加成功');
+            e.target.reset();
+            document.getElementById('upload-preview').classList.add('hidden');
+            document.getElementById('upload-text').classList.remove('hidden');
+            loadMenu();
+        } else {
+            showToast('添加失败');
+        }
+    } catch (err) {
+        showToast('网络错误');
+    }
+}
+
+async function handleEditMenu(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('name', document.getElementById('edit-menu-name').value);
+    formData.append('description', document.getElementById('edit-menu-description').value);
+    formData.append('price', document.getElementById('edit-menu-price').value);
+    formData.append('category', document.getElementById('edit-menu-category').value);
+    formData.append('spice_level', document.getElementById('edit-menu-spice').value);
+    formData.append('is_recommended', document.getElementById('edit-menu-recommended').checked);
+    formData.append('is_available', document.getElementById('edit-menu-available').checked);
+    formData.append('existing_image', document.getElementById('edit-existing-image').value);
+
+    const tasteStr = document.getElementById('edit-menu-taste-options').value.trim();
+    if (tasteStr) {
+        formData.append('taste_options', JSON.stringify(tasteStr.split(/[,，]/).map(s => s.trim()).filter(Boolean)));
+    } else {
+        formData.append('taste_options', '[]');
+    }
+
+    const imageFile = document.getElementById('edit-menu-image').files[0];
+    if (imageFile) formData.append('image', imageFile);
+
+    const id = document.getElementById('edit-menu-id').value;
+    try {
+        const response = await fetch(`/api/menu/${id}`, { method: 'PUT', body: formData });
+        if (response.ok) {
+            showToast('修改成功');
+            closeModal();
+            loadMenu();
+        } else {
+            showToast('修改失败');
+        }
+    } catch (err) {
+        showToast('网络错误');
+    }
 }
 
 async function loadMenu() {
     try {
         const response = await fetch('/api/menu');
-        const menuItems = await response.json();
-        renderMenu(menuItems);
-    } catch (error) {
-        console.error('加载菜单失败:', error);
+        const items = await response.json();
+        renderMenu(items);
+    } catch (err) {
+        console.error('加载菜单失败:', err);
     }
 }
 
-function renderMenu(menuItems) {
+function renderMenu(items) {
     const menuList = document.getElementById('menu-list');
-
-    if (menuItems.length === 0) {
-        menuList.innerHTML = `
-            <div class="mt-empty" style="padding:30px;">
-                <div class="mt-empty-icon">📋</div>
-                <div class="mt-empty-text">暂无菜品，快去添加吧</div>
-            </div>`;
+    if (items.length === 0) {
+        menuList.innerHTML = '<div class="mt-empty"><div class="mt-empty-text">暂无菜品</div></div>';
         return;
     }
 
-    menuList.innerHTML = menuItems.map(item => `
-        <div class="admin-menu-item">
+    menuList.innerHTML = items.map(item => `
+        <div class="admin-menu-item ${item.is_available === false ? 'item-sold-out' : ''}">
             <div class="admin-menu-img">
                 ${item.image_url
                     ? `<img src="${item.image_url}" alt="${item.name}">`
                     : `<div class="admin-menu-img-placeholder">🍜</div>`
                 }
+                ${item.is_recommended ? '<div class="admin-badge-rec">荐</div>' : ''}
             </div>
             <div class="admin-menu-info">
-                <div class="admin-menu-name">${item.name}</div>
-                ${item.description ? `<div class="admin-menu-desc">${item.description}</div>` : ''}
-                <div class="admin-menu-price">${item.price} 积分</div>
+                <div class="admin-menu-name">${item.name} ${item.is_available === false ? '<span class="sold-tag">售罄</span>' : ''}</div>
+                <div class="admin-menu-desc">${item.description || ''}</div>
+                <div class="admin-menu-meta">
+                    <span class="admin-menu-price">${item.price}积分</span>
+                    <span class="admin-menu-cat">${item.category || '主食'}</span>
+                    ${item.sales_count > 0 ? `<span class="admin-menu-sales">已售${item.sales_count}</span>` : ''}
+                </div>
             </div>
             <div class="admin-menu-actions">
-                <button class="mt-btn mt-btn-sm" style="background:#f0f0f0;color:#333;" onclick="editMenuItem('${item.id}')">编辑</button>
+                <button class="mt-btn mt-btn-sm mt-btn-primary" onclick="editMenuItem('${item.id}')">编辑</button>
                 <button class="mt-btn mt-btn-sm mt-btn-danger" onclick="deleteMenuItem('${item.id}')">删除</button>
             </div>
         </div>
     `).join('');
 }
 
-async function addMenuItem(e) {
-    e.preventDefault();
+function editMenuItem(id) {
+    fetch('/api/menu').then(r => r.json()).then(items => {
+        const item = items.find(i => i.id === id);
+        if (!item) return;
 
-    const formData = new FormData();
-    formData.append('name', document.getElementById('menu-name').value);
-    formData.append('description', document.getElementById('menu-description').value);
-    formData.append('price', document.getElementById('menu-price').value);
+        document.getElementById('edit-menu-id').value = item.id;
+        document.getElementById('edit-menu-name').value = item.name;
+        document.getElementById('edit-menu-description').value = item.description || '';
+        document.getElementById('edit-menu-price').value = item.price;
+        document.getElementById('edit-menu-category').value = item.category || '主食';
+        document.getElementById('edit-menu-spice').value = item.spice_level || '可选';
+        document.getElementById('edit-menu-recommended').checked = item.is_recommended;
+        document.getElementById('edit-menu-available').checked = item.is_available !== false;
+        document.getElementById('edit-existing-image').value = item.image_url || '';
 
-    const imageFile = document.getElementById('menu-image').files[0];
-    if (imageFile) {
-        formData.append('image', imageFile);
-    }
+        let tasteOpts = [];
+        try { tasteOpts = JSON.parse(item.taste_options || '[]'); } catch(e) {}
+        document.getElementById('edit-menu-taste-options').value = tasteOpts.join('，');
 
-    try {
-        const response = await fetch('/api/menu', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.ok) {
-            document.getElementById('add-menu-form').reset();
-            document.getElementById('upload-preview').classList.add('hidden');
-            document.getElementById('upload-text').classList.remove('hidden');
-            loadMenu();
-            showToast('添加成功');
+        if (item.image_url) {
+            document.getElementById('edit-upload-preview').src = item.image_url;
+            document.getElementById('edit-upload-preview').classList.remove('hidden');
+            document.getElementById('edit-upload-text').classList.add('hidden');
         } else {
-            showToast('添加失败');
+            document.getElementById('edit-upload-preview').classList.add('hidden');
+            document.getElementById('edit-upload-text').classList.remove('hidden');
         }
-    } catch (error) {
-        console.error('添加菜品失败:', error);
-        showToast('网络错误');
-    }
+
+        document.getElementById('edit-modal').classList.remove('hidden');
+    });
 }
 
-function editMenuItem(itemId) {
-    fetch('/api/menu')
-        .then(response => response.json())
-        .then(menuItems => {
-            const item = menuItems.find(i => i.id === itemId);
-            if (item) {
-                document.getElementById('edit-menu-id').value = item.id;
-                document.getElementById('edit-menu-name').value = item.name;
-                document.getElementById('edit-menu-description').value = item.description || '';
-                document.getElementById('edit-menu-price').value = item.price;
-                document.getElementById('edit-existing-image').value = item.image_url || '';
-
-                if (item.image_url) {
-                    document.getElementById('edit-upload-preview').src = item.image_url;
-                    document.getElementById('edit-upload-preview').classList.remove('hidden');
-                    document.getElementById('edit-upload-text').classList.add('hidden');
-                } else {
-                    document.getElementById('edit-upload-preview').classList.add('hidden');
-                    document.getElementById('edit-upload-text').classList.remove('hidden');
-                }
-
-                document.getElementById('edit-modal').classList.remove('hidden');
-            }
-        });
+function closeModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
 }
 
-async function updateMenuItem(e) {
-    e.preventDefault();
-
-    const formData = new FormData();
-    formData.append('name', document.getElementById('edit-menu-name').value);
-    formData.append('description', document.getElementById('edit-menu-description').value);
-    formData.append('price', document.getElementById('edit-menu-price').value);
-    formData.append('existing_image', document.getElementById('edit-existing-image').value);
-
-    const imageFile = document.getElementById('edit-menu-image').files[0];
-    if (imageFile) {
-        formData.append('image', imageFile);
-    }
-
-    const itemId = document.getElementById('edit-menu-id').value;
-
+async function deleteMenuItem(id) {
+    if (!confirm('确定删除这道菜吗？')) return;
     try {
-        const response = await fetch(`/api/menu/${itemId}`, {
-            method: 'PUT',
-            body: formData
-        });
-
+        const response = await fetch(`/api/menu/${id}`, { method: 'DELETE' });
         if (response.ok) {
-            closeModal();
-            loadMenu();
-            showToast('更新成功');
-        } else {
-            showToast('更新失败');
-        }
-    } catch (error) {
-        console.error('更新菜品失败:', error);
-        showToast('网络错误');
-    }
-}
-
-async function deleteMenuItem(itemId) {
-    if (!confirm('确定删除这个菜品？')) return;
-
-    try {
-        const response = await fetch(`/api/menu/${itemId}`, {
-            method: 'DELETE'
-        });
-
-        if (response.ok) {
-            loadMenu();
             showToast('已删除');
-        } else {
-            showToast('删除失败');
+            loadMenu();
         }
-    } catch (error) {
-        console.error('删除菜品失败:', error);
-        showToast('网络错误');
+    } catch (err) {
+        showToast('删除失败');
     }
 }
 
@@ -217,20 +239,15 @@ async function loadOrders() {
         const response = await fetch('/api/orders');
         const orders = await response.json();
         renderOrders(orders);
-    } catch (error) {
-        console.error('加载订单失败:', error);
+    } catch (err) {
+        console.error('加载订单失败:', err);
     }
 }
 
 function renderOrders(orders) {
     const ordersList = document.getElementById('orders-list');
-
     if (orders.length === 0) {
-        ordersList.innerHTML = `
-            <div class="mt-empty" style="padding:30px;">
-                <div class="mt-empty-icon">📦</div>
-                <div class="mt-empty-text">暂无订单</div>
-            </div>`;
+        ordersList.innerHTML = '<div class="mt-empty"><div class="mt-empty-text">暂无订单</div></div>';
         return;
     }
 
@@ -239,51 +256,48 @@ function renderOrders(orders) {
         return `
             <div class="mt-order-card">
                 <div class="mt-order-header">
-                    <div class="mt-order-shop">👤 ${order.user_name}</div>
-                    <div class="mt-order-status ${order.status}">${getStatusText(order.status)}</div>
+                    <div>
+                        <div class="mt-order-shop">👤 ${order.user_name || '未知用户'}</div>
+                        <div class="admin-order-time">${new Date(order.created_at).toLocaleString('zh-CN')}</div>
+                    </div>
+                    <div class="mt-order-status ${order.status}">${order.status === 'pending' ? '待处理' : '已完成'}</div>
                 </div>
                 <div class="mt-order-body">
                     ${items.map(item => `
                         <div class="mt-order-dish">
-                            <span class="mt-order-dish-name">${item.name} x${item.quantity}</span>
+                            <div>
+                                <span class="mt-order-dish-name">${item.name} x${item.quantity}</span>
+                                ${item.taste ? `<span class="order-taste-tag">${item.taste}</span>` : ''}
+                            </div>
                             <span class="mt-order-dish-price">${item.price * item.quantity}积分</span>
                         </div>
                     `).join('')}
+                    ${order.remark ? `<div class="order-remark">💬 备注：${order.remark}</div>` : ''}
                 </div>
                 <div class="mt-order-footer">
-                    <span class="mt-order-time">${new Date(order.created_at).toLocaleString('zh-CN')}</span>
-                    <div class="mt-order-total">共${order.total_points}<span class="mt-order-total-num">积分</span></div>
+                    <span class="mt-order-total">共<span class="mt-order-total-num">${order.total_points}</span><span class="mt-order-total-unit">积分</span></span>
+                    ${order.status === 'pending' ? `
+                        <button class="mt-btn mt-btn-sm mt-btn-success" onclick="completeOrder('${order.id}')">完成订单</button>
+                    ` : ''}
                 </div>
-                ${order.status === 'pending' ? `
-                    <div class="admin-order-actions">
-                        <button class="mt-btn mt-btn-sm mt-btn-success" onclick="updateOrderStatus('${order.id}', 'completed')">✓ 完成订单</button>
-                    </div>
-                ` : ''}
             </div>`;
     }).join('');
 }
 
-function getStatusText(status) {
-    const map = { 'pending': '待处理', 'completed': '已完成' };
-    return map[status] || status;
-}
-
-async function updateOrderStatus(orderId, status) {
+async function completeOrder(orderId) {
     try {
         const response = await fetch(`/api/orders/${orderId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
+            body: JSON.stringify({ status: 'completed' })
         });
-
         if (response.ok) {
             showToast('订单已完成');
-        } else {
-            showToast('操作失败');
+            loadOrders();
+            loadStats();
         }
-    } catch (error) {
-        console.error('更新订单状态失败:', error);
-        showToast('网络错误');
+    } catch (err) {
+        showToast('操作失败');
     }
 }
 
@@ -292,21 +306,17 @@ async function loadUsers() {
         const response = await fetch('/api/users');
         const users = await response.json();
         renderUsers(users);
-    } catch (error) {
-        console.error('加载用户失败:', error);
+    } catch (err) {
+        console.error('加载用户失败:', err);
     }
 }
 
 function renderUsers(users) {
     const usersList = document.getElementById('users-list');
-    const normalUsers = users.filter(user => user.name !== 'admin');
+    const normalUsers = users.filter(u => u.name !== 'admin');
 
     if (normalUsers.length === 0) {
-        usersList.innerHTML = `
-            <div class="mt-empty" style="padding:30px;">
-                <div class="mt-empty-icon">👥</div>
-                <div class="mt-empty-text">暂无用户，分享链接给好友吧</div>
-            </div>`;
+        usersList.innerHTML = '<div class="mt-empty"><div class="mt-empty-text">暂无注册用户</div></div>';
         return;
     }
 
@@ -318,12 +328,22 @@ function renderUsers(users) {
                 <div class="admin-user-points">积分余额：${user.points}</div>
             </div>
             <div class="admin-user-actions">
-                <button class="mt-btn mt-btn-sm mt-btn-primary" onclick="addPoints('${user.id}', 10)">+10</button>
-                <button class="mt-btn mt-btn-sm mt-btn-primary" onclick="addPoints('${user.id}', 50)">+50</button>
-                <button class="mt-btn mt-btn-sm mt-btn-primary" onclick="addPoints('${user.id}', 100)">+100</button>
+                <input type="number" class="points-input" id="points-input-${user.id}" placeholder="积分" min="1" value="">
+                <button class="mt-btn mt-btn-sm mt-btn-primary" onclick="addPointsFromInput('${user.id}')">充值</button>
             </div>
         </div>
     `).join('');
+}
+
+function addPointsFromInput(userId) {
+    const input = document.getElementById('points-input-' + userId);
+    const points = parseInt(input.value);
+    if (!points || points <= 0) {
+        showToast('请输入有效的积分数量');
+        return;
+    }
+    addPoints(userId, points);
+    input.value = '';
 }
 
 async function addPoints(userId, points) {
@@ -333,61 +353,66 @@ async function addPoints(userId, points) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ points, operation: 'add' })
         });
-
         if (response.ok) {
+            showToast(`已充值 ${points} 积分`);
             loadUsers();
-            showToast(`+${points} 积分`);
         } else {
-            showToast('操作失败');
+            showToast('充值失败');
         }
-    } catch (error) {
-        console.error('添加积分失败:', error);
+    } catch (err) {
         showToast('网络错误');
     }
 }
 
-function generateShareLinks() {
-    const baseUrl = window.location.origin;
-    document.getElementById('share-url').value = baseUrl + '/index.html';
-    document.getElementById('admin-url').value = baseUrl + '/admin.html';
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
 
-    const shareUrl = baseUrl + '/index.html';
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`;
-    document.getElementById('qr-code').innerHTML = `<img src="${qrCodeUrl}" alt="分享二维码">`;
+        document.getElementById('stat-total-orders').textContent = stats.total_orders;
+        document.getElementById('stat-today-orders').textContent = stats.today_orders;
+        document.getElementById('stat-total-users').textContent = stats.total_users;
+        document.getElementById('stat-total-sales').textContent = stats.total_sales;
+
+        const topItems = document.getElementById('top-items');
+        if (stats.top_items.length === 0) {
+            topItems.innerHTML = '<div class="mt-empty"><div class="mt-empty-text">暂无数据</div></div>';
+        } else {
+            topItems.innerHTML = stats.top_items.map((item, idx) => `
+                <div class="top-item">
+                    <span class="top-item-rank">${idx + 1}</span>
+                    <div class="top-item-info">
+                        <span class="top-item-name">${item.name}</span>
+                    </div>
+                    <span class="top-item-count">售出 ${item.total_qty} 份</span>
+                </div>
+            `).join('');
+        }
+    } catch (err) {
+        console.error('加载统计失败:', err);
+    }
+}
+
+function initShareLinks() {
+    const base = window.location.origin;
+    document.getElementById('share-url').value = base + '/index.html';
+    document.getElementById('admin-url').value = base + '/admin.html';
+
+    const qrContainer = document.getElementById('qr-code');
+    const shareUrl = base + '/index.html';
+    qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}" alt="QR Code">`;
 }
 
 function copyShareLink() {
     const input = document.getElementById('share-url');
     input.select();
-    navigator.clipboard.writeText(input.value).then(() => {
-        showToast('链接已复制');
-    }).catch(() => {
-        document.execCommand('copy');
-        showToast('链接已复制');
-    });
+    document.execCommand('copy');
+    showToast('用户链接已复制');
 }
 
 function copyAdminLink() {
     const input = document.getElementById('admin-url');
     input.select();
-    navigator.clipboard.writeText(input.value).then(() => {
-        showToast('管理员链接已复制');
-    }).catch(() => {
-        document.execCommand('copy');
-        showToast('管理员链接已复制');
-    });
-}
-
-function closeModal() {
-    document.getElementById('edit-modal').classList.add('hidden');
-}
-
-document.getElementById('edit-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
-
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+    document.execCommand('copy');
+    showToast('管理员链接已复制');
 }

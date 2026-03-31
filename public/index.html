@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>好友点餐</title>
+    <title>小赖菜单</title>
     <link rel="stylesheet" href="user.css">
-    <meta name="wechat-share" content="好友点餐，快来下单吧！">
 </head>
 <body>
     <div id="app">
@@ -21,8 +20,8 @@
                         <div class="logo-icon-wrap">
                             <span class="logo-icon">🍜</span>
                         </div>
-                        <h1>好友点餐</h1>
-                        <p>用积分，享美食</p>
+                        <h1>小赖菜单</h1>
+                        <p>用积分，享美食，点你想吃</p>
                     </div>
                     <div class="login-box">
                         <div class="login-input-wrap">
@@ -38,7 +37,7 @@
         <div id="menu-page" class="page">
             <div class="mt-header">
                 <div class="mt-header-left">
-                    <span class="mt-header-title">好友点餐</span>
+                    <span class="mt-header-title">小赖菜单</span>
                 </div>
                 <div class="mt-header-right">
                     <div class="mt-header-user" onclick="showOrders()">
@@ -55,6 +54,15 @@
                 <div class="points-user" id="user-name-display">未登录</div>
             </div>
 
+            <div class="search-bar">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="搜索菜品..." oninput="filterMenu()">
+            </div>
+
+            <div class="category-tabs" id="category-tabs">
+                <div class="cat-tab active" data-cat="all" onclick="selectCategory('all', this)">全部</div>
+            </div>
+
             <div class="mt-menu-layout">
                 <div id="menu-list" class="mt-dish-list"></div>
             </div>
@@ -67,9 +75,7 @@
                 <div class="cart-float-info">
                     <span class="cart-float-total"><span id="cart-total">0</span>积分</span>
                 </div>
-                <div class="cart-float-btn" onclick="event.stopPropagation(); submitOrder()">
-                    去下单
-                </div>
+                <div class="cart-float-btn" onclick="event.stopPropagation(); openRemarkPanel()">去下单</div>
             </div>
 
             <div id="cart-panel-mask" class="mt-mask hidden" onclick="toggleCartPanel()"></div>
@@ -81,8 +87,38 @@
                 <div id="cart-items" class="cart-panel-list"></div>
             </div>
 
+            <div id="remark-mask" class="mt-mask hidden" onclick="closeRemarkPanel()"></div>
+            <div id="remark-panel" class="remark-panel hidden">
+                <div class="remark-header">
+                    <span>订单备注</span>
+                    <span class="remark-close" onclick="closeRemarkPanel()">&times;</span>
+                </div>
+                <textarea id="order-remark" placeholder="如：不要香菜、少放盐、加辣..."></textarea>
+                <div class="remark-footer">
+                    <div class="remark-total">合计：<span id="remark-total-points">0</span>积分</div>
+                    <button class="mt-btn mt-btn-primary" onclick="submitOrder()">确认下单</button>
+                </div>
+            </div>
+
+            <div id="taste-mask" class="mt-mask hidden" onclick="closeTastePanel()"></div>
+            <div id="taste-panel" class="taste-panel hidden">
+                <div class="taste-header">
+                    <span id="taste-dish-name">菜品名称</span>
+                    <span class="taste-close" onclick="closeTastePanel()">&times;</span>
+                </div>
+                <div id="taste-spice-section" class="taste-section">
+                    <div class="taste-section-title">辣度</div>
+                    <div class="taste-options" id="spice-options"></div>
+                </div>
+                <div id="taste-custom-section" class="taste-section">
+                    <div class="taste-section-title">口味</div>
+                    <div class="taste-options" id="custom-taste-options"></div>
+                </div>
+                <button class="mt-btn mt-btn-primary mt-btn-block" onclick="confirmTaste()">确认</button>
+            </div>
+
             <div class="mt-bottom-nav">
-                <div class="nav-item active">
+                <div class="nav-item active" onclick="showMenu()">
                     <span class="nav-icon">🏠</span>
                     <span class="nav-text">点餐</span>
                 </div>
@@ -118,7 +154,7 @@
                     <span class="nav-icon">🏠</span>
                     <span class="nav-text">点餐</span>
                 </div>
-                <div class="nav-item active">
+                <div class="nav-item active" onclick="showOrders()">
                     <span class="nav-icon">📋</span>
                     <span class="nav-text">订单</span>
                 </div>
