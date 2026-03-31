@@ -8,6 +8,9 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
+const bcrypt = require('bcrypt');
+
+const SALT_ROUNDS = 10;
 
 const app = express();
 const server = http.createServer(app);
@@ -54,7 +57,8 @@ async function initDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(64) PRIMARY KEY,
-        name VARCHAR(50) NOT NULL,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) DEFAULT '',
         points INT DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
@@ -101,6 +105,7 @@ async function initDatabase() {
     `);
 
     const alterCols = [
+      { table: 'users', col: 'password_hash', def: "VARCHAR(255) DEFAULT ''" },
       { table: 'menu_items', col: 'category', def: "VARCHAR(50) DEFAULT '主食'" },
       { table: 'menu_items', col: 'is_available', def: "BOOLEAN DEFAULT true" },
       { table: 'menu_items', col: 'is_recommended', def: "BOOLEAN DEFAULT false" },
@@ -125,10 +130,16 @@ async function initDatabase() {
     await pool.query("CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)");
     await pool.query("CREATE INDEX IF NOT EXISTS idx_menu_category ON menu_items(category)");
 
-    const { rows } = await pool.query("SELECT id FROM users WHERE name = 'admin' LIMIT 1");
-    if (rows.length === 0) {
+    const { rows: adminRows } = await pool.query("SELECT id, password_hash FROM users WHERE name = 'admin' LIMIT 1");
+    if (adminRows.length === 0) {
       const adminId = uuidv4();
-      await pool.query("INSERT INTO users (id, name, points) VALUES ($1, $2, $3)", [adminId, 'admin', 999999]);
+      const hash = await bcrypt.hash('123456', SALT_ROUNDS);
+      await pool.query("INSERT INTO users (id, name, password_hash, points) VALUES ($1, $2, $3, $4)", [adminId, 'admin', hash, 999999]);
+      console.log('管理员账号已创建 (admin / 123456)');
+    } else if (!adminRows[0].password_hash) {
+      const hash = await bcrypt.hash('123456', SALT_ROUNDS);
+      await pool.query("UPDATE users SET password_hash = $1 WHERE name = 'admin'", [hash]);
+      console.log('管理员密码已加密');
     }
 
     console.log('数据库初始化完成');
@@ -140,16 +151,63 @@ async function initDatabase() {
 
 initDatabase();
 
+app.post('/api/register', async (req, res) => {
+  const { name, password } = req.body;
+  if (!name || !password) {
+    return res.status(400).json({ error: '请输入用户名和密码' });
+  }
+  if (name.length < 2 || name.length > 12) {
+    return res.status(400).json({ error: '用户名长度2-12个字符' });
+  }
+  if (password.length < 4) {
+    return res.status(400).json({ error: '密码至少4个字符' });
+  }
+  try {
+    const { rows } = await pool.query("SELECT id FROM users WHERE name = $1 LIMIT 1", [name]);
+    if (rows.length > 0) {
+      return res.status(400).json({ error: '该用户名已被注册' });
+    }
+    const userId = uuidv4();
+    const hash = await bcrypt.hash(password, SALT_ROUNDS);
+    await pool.query("INSERT INTO users (id, name, password_hash, points) VALUES ($1, $2, $3, $4)", [userId, name, hash, 0]);
+    res.json({ id: userId, name, points: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { name, password } = req.body;
+  if (!name || !password) {
+    return res.status(400).json({ error: '请输入用户名和密码' });
+  }
+  try {
+    const { rows } = await pool.query("SELECT * FROM users WHERE name = $1 LIMIT 1", [name]);
+    if (rows.length === 0) {
+      return res.status(401).json({ error: '用户名或密码错误' });
+    }
+    const user = rows[0];
+    if (!user.password_hash) {
+      return res.status(401).json({ error: '该账号未设置密码，请重新注册' });
+    }
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) {
+      return res.status(401).json({ error: '用户名或密码错误' });
+    }
+    res.json({ id: user.id, name: user.name, points: user.points });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/users', async (req, res) => {
   const { name } = req.body;
   try {
-    const { rows } = await pool.query("SELECT * FROM users WHERE name = $1 LIMIT 1", [name]);
+    const { rows } = await pool.query("SELECT id, name, points FROM users WHERE name = $1 LIMIT 1", [name]);
     if (rows.length > 0) {
       return res.json(rows[0]);
     }
-    const userId = uuidv4();
-    await pool.query("INSERT INTO users (id, name, points) VALUES ($1, $2, $3)", [userId, name, 0]);
-    res.json({ id: userId, name, points: 0 });
+    res.status(404).json({ error: '用户不存在' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -157,8 +215,34 @@ app.post('/api/users', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
   try {
-    const { rows } = await pool.query("SELECT * FROM users ORDER BY created_at DESC");
+    const { rows } = await pool.query("SELECT id, name, points, created_at FROM users ORDER BY created_at DESC");
     res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/users/:id/password', async (req, res) => {
+  const { id } = req.params;
+  const { old_password, new_password } = req.body;
+  if (!old_password || !new_password) {
+    return res.status(400).json({ error: '请输入旧密码和新密码' });
+  }
+  if (new_password.length < 4) {
+    return res.status(400).json({ error: '新密码至少4个字符' });
+  }
+  try {
+    const { rows } = await pool.query("SELECT password_hash FROM users WHERE id = $1", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+    const match = await bcrypt.compare(old_password, rows[0].password_hash);
+    if (!match) {
+      return res.status(401).json({ error: '旧密码错误' });
+    }
+    const hash = await bcrypt.hash(new_password, SALT_ROUNDS);
+    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [hash, id]);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

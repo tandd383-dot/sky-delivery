@@ -8,14 +8,47 @@
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <div id="app">
+    <div id="admin-login-page">
+        <div class="login-bg">
+            <div class="login-decor">
+                <div class="login-circle login-circle-1"></div>
+                <div class="login-circle login-circle-2"></div>
+                <div class="login-circle login-circle-3"></div>
+            </div>
+            <div class="login-content">
+                <div class="login-logo">
+                    <div class="logo-icon-wrap">
+                        <span class="logo-icon">👨‍🍳</span>
+                    </div>
+                    <h1>管理后台</h1>
+                    <p>小赖菜单 · 管理员登录</p>
+                </div>
+                <div class="login-box">
+                    <div class="login-input-wrap">
+                        <span class="login-input-icon">👤</span>
+                        <input type="text" id="admin-login-name" placeholder="管理员账号" value="admin">
+                    </div>
+                    <div class="login-input-wrap">
+                        <span class="login-input-icon">🔒</span>
+                        <input type="password" id="admin-login-password" placeholder="管理员密码">
+                    </div>
+                    <button onclick="adminLogin()" class="login-btn">登录</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-main" class="hidden">
         <div class="admin-header">
             <div class="admin-header-inner">
                 <span class="admin-header-icon">🍜</span>
                 <span class="admin-header-title">小赖菜单 · 管理后台</span>
             </div>
-            <div id="new-order-badge" class="new-order-badge hidden" onclick="showTab('orders', document.querySelector('[data-tab=orders]'))">
-                <span id="new-order-count">0</span> 新订单
+            <div class="admin-header-right">
+                <div id="new-order-badge" class="new-order-badge hidden" onclick="showTab('orders', document.querySelector('[data-tab=orders]'))">
+                    <span id="new-order-count">0</span> 新订单
+                </div>
+                <span class="admin-header-logout" onclick="adminLogout()">退出</span>
             </div>
         </div>
 
@@ -83,7 +116,6 @@
                     <button type="submit" class="mt-btn mt-btn-primary mt-btn-block">添加菜品</button>
                 </form>
             </div>
-
             <div class="admin-card">
                 <div class="admin-card-title">当前菜单</div>
                 <div id="menu-list" class="admin-menu-list"></div>
@@ -108,22 +140,10 @@
             <div class="admin-card">
                 <div class="admin-card-title">数据概览</div>
                 <div class="stats-grid">
-                    <div class="stat-card stat-orders">
-                        <div class="stat-num" id="stat-total-orders">0</div>
-                        <div class="stat-label">总订单</div>
-                    </div>
-                    <div class="stat-card stat-today">
-                        <div class="stat-num" id="stat-today-orders">0</div>
-                        <div class="stat-label">今日订单</div>
-                    </div>
-                    <div class="stat-card stat-users">
-                        <div class="stat-num" id="stat-total-users">0</div>
-                        <div class="stat-label">注册用户</div>
-                    </div>
-                    <div class="stat-card stat-sales">
-                        <div class="stat-num" id="stat-total-sales">0</div>
-                        <div class="stat-label">总消费积分</div>
-                    </div>
+                    <div class="stat-card stat-orders"><div class="stat-num" id="stat-total-orders">0</div><div class="stat-label">总订单</div></div>
+                    <div class="stat-card stat-today"><div class="stat-num" id="stat-today-orders">0</div><div class="stat-label">今日订单</div></div>
+                    <div class="stat-card stat-users"><div class="stat-num" id="stat-total-users">0</div><div class="stat-label">注册用户</div></div>
+                    <div class="stat-card stat-sales"><div class="stat-num" id="stat-total-sales">0</div><div class="stat-label">总消费积分</div></div>
                 </div>
             </div>
             <div class="admin-card">
@@ -141,10 +161,7 @@
                         <input type="text" id="share-url" readonly class="share-input">
                         <button onclick="copyShareLink()" class="mt-btn mt-btn-primary mt-btn-sm">复制</button>
                     </div>
-                    <div class="share-qr">
-                        <div id="qr-code"></div>
-                        <p class="share-qr-hint">扫码分享给好友</p>
-                    </div>
+                    <div class="share-qr"><div id="qr-code"></div><p class="share-qr-hint">扫码分享给好友</p></div>
                     <div class="share-admin-link">
                         <p class="share-desc">管理员入口（仅自己使用）：</p>
                         <div class="share-link-box">
@@ -170,33 +187,19 @@
                 <div class="admin-form-row">
                     <input type="number" id="edit-menu-price" placeholder="积分价格" required min="1" class="admin-form-half">
                     <select id="edit-menu-category" class="admin-form-half admin-select">
-                        <option value="主食">主食</option>
-                        <option value="炒菜">炒菜</option>
-                        <option value="凉菜">凉菜</option>
-                        <option value="汤类">汤类</option>
-                        <option value="小吃">小吃</option>
-                        <option value="饮品">饮品</option>
-                        <option value="甜点">甜点</option>
+                        <option value="主食">主食</option><option value="炒菜">炒菜</option><option value="凉菜">凉菜</option>
+                        <option value="汤类">汤类</option><option value="小吃">小吃</option><option value="饮品">饮品</option><option value="甜点">甜点</option>
                     </select>
                 </div>
                 <div class="admin-form-row">
                     <select id="edit-menu-spice" class="admin-form-half admin-select">
-                        <option value="可选">辣度：可选</option>
-                        <option value="不可选">辣度：不可选</option>
-                        <option value="微辣">辣度：微辣</option>
-                        <option value="中辣">辣度：中辣</option>
-                        <option value="特辣">辣度：特辣</option>
+                        <option value="可选">辣度：可选</option><option value="不可选">辣度：不可选</option>
+                        <option value="微辣">辣度：微辣</option><option value="中辣">辣度：中辣</option><option value="特辣">辣度：特辣</option>
                     </select>
-                    <label class="admin-checkbox-label admin-form-half">
-                        <input type="checkbox" id="edit-menu-recommended"> 设为推荐
-                    </label>
+                    <label class="admin-checkbox-label admin-form-half"><input type="checkbox" id="edit-menu-recommended"> 设为推荐</label>
                 </div>
-                <div class="admin-form-row">
-                    <input type="text" id="edit-menu-taste-options" placeholder="口味选项（逗号分隔）" class="admin-form-full">
-                </div>
-                <label class="admin-checkbox-label">
-                    <input type="checkbox" id="edit-menu-available"> 上架中
-                </label>
+                <div class="admin-form-row"><input type="text" id="edit-menu-taste-options" placeholder="口味选项（逗号分隔）" class="admin-form-full"></div>
+                <label class="admin-checkbox-label"><input type="checkbox" id="edit-menu-available"> 上架中</label>
                 <input type="hidden" id="edit-existing-image">
                 <div class="upload-area" onclick="document.getElementById('edit-menu-image').click()">
                     <input type="file" id="edit-menu-image" accept="image/*" hidden>
@@ -205,6 +208,30 @@
                 </div>
                 <button type="submit" class="mt-btn mt-btn-primary mt-btn-block">保存修改</button>
             </form>
+        </div>
+    </div>
+
+    <div id="password-modal" class="mt-mask hidden">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <span>修改管理员密码</span>
+                <span class="edit-modal-close" onclick="closePasswordModal()">&times;</span>
+            </div>
+            <div class="admin-form">
+                <div class="login-input-wrap">
+                    <span class="login-input-icon">🔒</span>
+                    <input type="password" id="admin-old-password" placeholder="当前密码">
+                </div>
+                <div class="login-input-wrap">
+                    <span class="login-input-icon">🔑</span>
+                    <input type="password" id="admin-new-password" placeholder="新密码（至少4位）">
+                </div>
+                <div class="login-input-wrap">
+                    <span class="login-input-icon">🔑</span>
+                    <input type="password" id="admin-new-password2" placeholder="确认新密码">
+                </div>
+                <button class="mt-btn mt-btn-primary mt-btn-block" onclick="adminChangePassword()">确认修改</button>
+            </div>
         </div>
     </div>
 

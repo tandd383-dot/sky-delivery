@@ -24,11 +24,38 @@
                         <p>用积分，享美食，点你想吃</p>
                     </div>
                     <div class="login-box">
-                        <div class="login-input-wrap">
-                            <span class="login-input-icon">👤</span>
-                            <input type="text" id="user-name" placeholder="请输入你的昵称" maxlength="12">
+                        <div id="login-form">
+                            <div class="login-input-wrap">
+                                <span class="login-input-icon">👤</span>
+                                <input type="text" id="login-name" placeholder="请输入用户名" maxlength="12">
+                            </div>
+                            <div class="login-input-wrap">
+                                <span class="login-input-icon">🔒</span>
+                                <input type="password" id="login-password" placeholder="请输入密码">
+                            </div>
+                            <button onclick="login()" class="login-btn">登录</button>
+                            <div class="login-switch">
+                                还没有账号？<span class="login-switch-link" onclick="showRegisterForm()">立即注册</span>
+                            </div>
                         </div>
-                        <button onclick="login()" class="login-btn">开始点餐</button>
+                        <div id="register-form" class="hidden">
+                            <div class="login-input-wrap">
+                                <span class="login-input-icon">👤</span>
+                                <input type="text" id="reg-name" placeholder="设置用户名（2-12个字符）" maxlength="12">
+                            </div>
+                            <div class="login-input-wrap">
+                                <span class="login-input-icon">🔒</span>
+                                <input type="password" id="reg-password" placeholder="设置密码（至少4位）">
+                            </div>
+                            <div class="login-input-wrap">
+                                <span class="login-input-icon">🔒</span>
+                                <input type="password" id="reg-password2" placeholder="再次确认密码">
+                            </div>
+                            <button onclick="register()" class="login-btn">注册</button>
+                            <div class="login-switch">
+                                已有账号？<span class="login-switch-link" onclick="showLoginForm()">去登录</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -40,7 +67,7 @@
                     <span class="mt-header-title">小赖菜单</span>
                 </div>
                 <div class="mt-header-right">
-                    <div class="mt-header-user" onclick="showOrders()">
+                    <div class="mt-header-user" onclick="showProfilePanel()">
                         <span class="user-avatar" id="user-avatar-text">我</span>
                     </div>
                 </div>
@@ -115,6 +142,50 @@
                     <div class="taste-options" id="custom-taste-options"></div>
                 </div>
                 <button class="mt-btn mt-btn-primary mt-btn-block" onclick="confirmTaste()">确认</button>
+            </div>
+
+            <div id="profile-mask" class="mt-mask hidden" onclick="closeProfilePanel()"></div>
+            <div id="profile-panel" class="profile-panel hidden">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profile-avatar">我</div>
+                    <div class="profile-name" id="profile-name">用户名</div>
+                    <div class="profile-points">积分：<span id="profile-points-value">0</span></div>
+                </div>
+                <div class="profile-menu">
+                    <div class="profile-menu-item" onclick="showChangePassword()">
+                        <span class="profile-menu-icon">🔑</span>
+                        <span>修改密码</span>
+                        <span class="profile-menu-arrow">›</span>
+                    </div>
+                    <div class="profile-menu-item" onclick="logout()">
+                        <span class="profile-menu-icon">🚪</span>
+                        <span>退出登录</span>
+                        <span class="profile-menu-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="password-mask" class="mt-mask hidden" onclick="closePasswordPanel()"></div>
+            <div id="password-panel" class="password-panel hidden">
+                <div class="password-header">
+                    <span>修改密码</span>
+                    <span class="password-close" onclick="closePasswordPanel()">&times;</span>
+                </div>
+                <div class="password-form">
+                    <div class="login-input-wrap">
+                        <span class="login-input-icon">🔒</span>
+                        <input type="password" id="old-password" placeholder="旧密码">
+                    </div>
+                    <div class="login-input-wrap">
+                        <span class="login-input-icon">🔑</span>
+                        <input type="password" id="new-password" placeholder="新密码（至少4位）">
+                    </div>
+                    <div class="login-input-wrap">
+                        <span class="login-input-icon">🔑</span>
+                        <input type="password" id="new-password2" placeholder="确认新密码">
+                    </div>
+                    <button class="mt-btn mt-btn-primary mt-btn-block" onclick="changePassword()">确认修改</button>
+                </div>
             </div>
 
             <div class="mt-bottom-nav">

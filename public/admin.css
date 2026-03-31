@@ -24,6 +24,27 @@
     letter-spacing: 0.5px;
 }
 
+.admin-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-header-logout {
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.15);
+    transition: background 0.2s;
+    font-weight: 500;
+}
+
+.admin-header-logout:active {
+    background: rgba(255,255,255,0.3);
+}
+
 .new-order-badge {
     background: var(--mt-red);
     color: white;
