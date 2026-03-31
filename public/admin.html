@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>管理后台 - 好友点餐</title>
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="user.css">
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
     <div id="app">
-        <div class="mt-header">
-            <div class="mt-header-title">🍜 管理后台</div>
-            <div class="mt-header-placeholder"></div>
+        <div class="admin-header">
+            <div class="admin-header-inner">
+                <span class="admin-header-icon">🍜</span>
+                <span class="admin-header-title">管理后台</span>
+            </div>
         </div>
 
         <div class="admin-tabs">
@@ -87,7 +88,7 @@
                         <p class="share-desc">管理员入口（仅自己使用）：</p>
                         <div class="share-link-box">
                             <input type="text" id="admin-url" readonly class="share-input">
-                            <button onclick="copyAdminLink()" class="mt-btn mt-btn-sm" style="background:#333;color:white;">复制</button>
+                            <button onclick="copyAdminLink()" class="mt-btn mt-btn-sm mt-btn-dark">复制</button>
                         </div>
                     </div>
                 </div>

@@ -115,9 +115,14 @@ initDatabase();
 
 app.post('/api/users', async (req, res) => {
   const { name } = req.body;
-  const userId = uuidv4();
 
   try {
+    const { rows } = await pool.query("SELECT * FROM users WHERE name = $1 LIMIT 1", [name]);
+    if (rows.length > 0) {
+      return res.json(rows[0]);
+    }
+
+    const userId = uuidv4();
     await pool.query("INSERT INTO users (id, name, points) VALUES ($1, $2, $3)", [userId, name, 0]);
     res.json({ id: userId, name, points: 0 });
   } catch (err) {

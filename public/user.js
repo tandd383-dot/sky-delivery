@@ -2,6 +2,7 @@ let currentUser = null;
 let cart = [];
 let allOrders = [];
 let currentFilter = 'all';
+let cartPanelOpen = false;
 
 const socket = io();
 
@@ -24,6 +25,14 @@ function switchPage(pageId) {
     document.getElementById(pageId).classList.add('active');
 }
 
+function showLoginPage() {
+    currentUser = null;
+    localStorage.removeItem('userId');
+    cart = [];
+    updateCartDisplay();
+    switchPage('login-page');
+}
+
 async function login() {
     const userName = document.getElementById('user-name').value.trim();
     if (!userName) {
@@ -42,8 +51,10 @@ async function login() {
             const user = await response.json();
             currentUser = user;
             localStorage.setItem('userId', user.id);
+            document.getElementById('user-name-display').textContent = user.name;
+            document.getElementById('user-points').textContent = user.points;
+            document.getElementById('user-avatar-text').textContent = user.name.charAt(0).toUpperCase();
             showMenu();
-            loadUserInfo(user.id);
             showToast('欢迎你，' + user.name);
         } else {
             showToast('登录失败');
@@ -66,6 +77,8 @@ async function loadUserInfo(userId) {
             document.getElementById('user-points').textContent = user.points;
             document.getElementById('user-avatar-text').textContent = user.name.charAt(0).toUpperCase();
             showMenu();
+        } else {
+            showLoginPage();
         }
     } catch (error) {
         console.error('加载用户信息失败:', error);
@@ -111,12 +124,12 @@ function renderMenu(menuItems) {
                         ${item.description ? `<div class="mt-dish-desc">${item.description}</div>` : ''}
                     </div>
                     <div class="mt-dish-bottom">
-                        <div class="mt-dish-price">${item.price}<span class="mt-dish-price-unit">积分</span></div>
+                        <div class="mt-dish-price"><span class="mt-dish-price-num">${item.price}</span><span class="mt-dish-price-unit">积分</span></div>
                         ${qty > 0 ? `
                             <div class="cart-ctrl">
                                 <button class="cart-ctrl-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
                                 <span class="cart-ctrl-num">${qty}</span>
-                                <button class="cart-ctrl-btn" style="background:linear-gradient(135deg,var(--mt-orange),var(--mt-yellow));border:none;" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+</button>
+                                <button class="cart-ctrl-btn cart-ctrl-btn-add" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+</button>
                             </div>
                         ` : `
                             <button class="mt-add-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+</button>
@@ -161,7 +174,7 @@ function clearCart() {
     cart = [];
     updateCartDisplay();
     loadMenu();
-    toggleCartPanel();
+    closeCartPanel();
 }
 
 function updateCartDisplay() {
@@ -179,6 +192,9 @@ function updateCartDisplay() {
         cartTotal.textContent = totalPrice;
     } else {
         cartFloat.classList.add('hidden');
+        if (cartPanelOpen) {
+            closeCartPanel();
+        }
     }
 
     if (cart.length === 0) {
@@ -192,28 +208,40 @@ function updateCartDisplay() {
     cartItems.innerHTML = cart.map(item => `
         <div class="cart-panel-item">
             <span class="cart-panel-item-name">${item.name}</span>
-            <span class="cart-panel-item-price">¥${item.price * item.quantity}</span>
+            <span class="cart-panel-item-price">${item.price * item.quantity}积分</span>
             <div class="cart-ctrl">
                 <button class="cart-ctrl-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
                 <span class="cart-ctrl-num">${item.quantity}</span>
-                <button class="cart-ctrl-btn" style="background:linear-gradient(135deg,var(--mt-orange),var(--mt-yellow));border:none;" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+</button>
+                <button class="cart-ctrl-btn cart-ctrl-btn-add" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">+</button>
             </div>
         </div>
     `).join('');
 }
 
 function toggleCartPanel() {
+    if (cartPanelOpen) {
+        closeCartPanel();
+    } else {
+        openCartPanel();
+    }
+}
+
+function openCartPanel() {
     const mask = document.getElementById('cart-panel-mask');
     const panel = document.getElementById('cart-panel');
-    if (panel.classList.contains('hidden')) {
-        mask.classList.remove('hidden');
-        panel.classList.remove('hidden');
-        panel.classList.add('show');
-    } else {
-        mask.classList.add('hidden');
-        panel.classList.add('hidden');
-        panel.classList.remove('show');
-    }
+    mask.classList.remove('hidden');
+    panel.classList.remove('hidden');
+    panel.classList.add('show');
+    cartPanelOpen = true;
+}
+
+function closeCartPanel() {
+    const mask = document.getElementById('cart-panel-mask');
+    const panel = document.getElementById('cart-panel');
+    mask.classList.add('hidden');
+    panel.classList.add('hidden');
+    panel.classList.remove('show');
+    cartPanelOpen = false;
 }
 
 async function submitOrder() {
@@ -243,10 +271,12 @@ async function submitOrder() {
         if (response.ok) {
             cart = [];
             updateCartDisplay();
-            loadUserInfo(currentUser.id);
-            toggleCartPanel();
+            if (cartPanelOpen) {
+                closeCartPanel();
+            }
             loadMenu();
             showToast('下单成功！');
+            loadUserInfo(currentUser.id);
             loadMyOrders();
             showOrders();
         } else {
@@ -310,7 +340,7 @@ function renderMyOrders(orders) {
                 </div>
                 <div class="mt-order-footer">
                     <span class="mt-order-time">${new Date(order.created_at).toLocaleString('zh-CN')}</span>
-                    <div class="mt-order-total">共${order.total_points}<span class="mt-order-total-num">积分</span></div>
+                    <div class="mt-order-total">共<span class="mt-order-total-num">${order.total_points}</span><span class="mt-order-total-unit">积分</span></div>
                 </div>
             </div>`;
     }).join('');

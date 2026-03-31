@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>好友点餐</title>
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="user.css">
     <meta name="wechat-share" content="好友点餐，快来下单吧！">
 </head>
@@ -12,26 +11,39 @@
     <div id="app">
         <div id="login-page" class="page active">
             <div class="login-bg">
-                <div class="login-logo">
-                    <div class="logo-icon">🍜</div>
-                    <h1>好友点餐</h1>
-                    <p>用积分，享美食</p>
+                <div class="login-decor">
+                    <div class="login-circle login-circle-1"></div>
+                    <div class="login-circle login-circle-2"></div>
+                    <div class="login-circle login-circle-3"></div>
                 </div>
-                <div class="login-box">
-                    <input type="text" id="user-name" placeholder="请输入你的昵称" maxlength="12">
-                    <button onclick="login()" class="mt-btn mt-btn-primary mt-btn-block">开始点餐</button>
+                <div class="login-content">
+                    <div class="login-logo">
+                        <div class="logo-icon-wrap">
+                            <span class="logo-icon">🍜</span>
+                        </div>
+                        <h1>好友点餐</h1>
+                        <p>用积分，享美食</p>
+                    </div>
+                    <div class="login-box">
+                        <div class="login-input-wrap">
+                            <span class="login-input-icon">👤</span>
+                            <input type="text" id="user-name" placeholder="请输入你的昵称" maxlength="12">
+                        </div>
+                        <button onclick="login()" class="login-btn">开始点餐</button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="menu-page" class="page">
             <div class="mt-header">
-                <div class="mt-header-search">
-                    <span class="search-icon">🔍</span>
-                    <span>搜索菜品</span>
+                <div class="mt-header-left">
+                    <span class="mt-header-title">好友点餐</span>
                 </div>
-                <div class="mt-header-user" onclick="showOrders()">
-                    <span class="user-avatar" id="user-avatar-text">我</span>
+                <div class="mt-header-right">
+                    <div class="mt-header-user" onclick="showOrders()">
+                        <span class="user-avatar" id="user-avatar-text">我</span>
+                    </div>
                 </div>
             </div>
 
@@ -53,8 +65,7 @@
                     🛒
                 </div>
                 <div class="cart-float-info">
-                    <span class="cart-float-total">¥<span id="cart-total">0</span></span>
-                    <span class="cart-float-hint">另需配送费¥0</span>
+                    <span class="cart-float-total"><span id="cart-total">0</span>积分</span>
                 </div>
                 <div class="cart-float-btn" onclick="event.stopPropagation(); submitOrder()">
                     去下单
@@ -84,9 +95,17 @@
 
         <div id="orders-page" class="page">
             <div class="mt-header">
-                <div class="mt-header-back" onclick="showMenu()">← 返回</div>
-                <div class="mt-header-title">我的订单</div>
-                <div class="mt-header-placeholder"></div>
+                <div class="mt-header-left">
+                    <div class="mt-header-back" onclick="showMenu()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </div>
+                    <span class="mt-header-title">我的订单</span>
+                </div>
+                <div class="mt-header-right">
+                    <div class="mt-header-user" onclick="showMenu()">
+                        <span class="user-avatar" id="user-avatar-text-2">我</span>
+                    </div>
+                </div>
             </div>
             <div class="mt-order-tabs">
                 <div class="order-tab active" data-status="all" onclick="filterOrders('all', this)">全部</div>
