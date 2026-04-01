@@ -14,6 +14,8 @@ socket.on('new_order', (data) => {
 });
 
 socket.on('order_status_update', () => { loadOrders(); loadStats(); });
+socket.on('menu_updated', () => { loadMenu(); });
+socket.on('user_points_update', () => { loadUsers(); });
 
 document.addEventListener('DOMContentLoaded', function() {
     if (adminId) {

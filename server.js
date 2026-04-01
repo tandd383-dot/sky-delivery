@@ -275,6 +275,7 @@ app.post('/api/menu', upload.single('image'), async (req, res) => {
        category || '主食', spice_level || '可选',
        taste_options || '[]', is_recommended === 'true' || is_recommended === true]
     );
+    io.emit('menu_updated');
     res.json({ id: itemId, name, description, price: parseInt(price), image_url: imageUrl, category: category || '主食' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -303,6 +304,7 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
        is_available !== 'false' && is_available !== false,
        is_recommended === 'true' || is_recommended === true, id]
     );
+    io.emit('menu_updated');
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -314,6 +316,7 @@ app.put('/api/menu/:id/toggle', async (req, res) => {
   const { field } = req.body;
   try {
     await pool.query(`UPDATE menu_items SET ${field} = NOT ${field} WHERE id = $1`, [id]);
+    io.emit('menu_updated');
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -324,6 +327,7 @@ app.delete('/api/menu/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query("DELETE FROM menu_items WHERE id = $1", [id]);
+    io.emit('menu_updated');
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
