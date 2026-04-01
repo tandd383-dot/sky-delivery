@@ -354,7 +354,7 @@ app.post('/api/orders', async (req, res) => {
     }
     await client.query("UPDATE users SET points = points - $1 WHERE id = $2", [totalPoints, user_id]);
     await client.query('COMMIT');
-    io.emit('new_order', { order_id: orderId, user_id, items, total_points, remark });
+    io.emit('new_order', { order_id: orderId, user_id, items, total_points: totalPoints, remark });
     res.json({ id: orderId, total_points: totalPoints });
   } catch (err) {
     await client.query('ROLLBACK');
