@@ -256,6 +256,7 @@ app.post('/api/users/:id/points', async (req, res) => {
     : "UPDATE users SET points = $1 WHERE id = $2";
   try {
     await pool.query(query, [points, id]);
+    io.emit('user_points_update', { user_id: id });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

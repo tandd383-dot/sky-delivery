@@ -15,6 +15,7 @@ const socket = io();
 
 socket.on('new_order', () => { if (currentUser) loadMyOrders(); });
 socket.on('order_status_update', () => { if (currentUser) loadMyOrders(); });
+socket.on('user_points_update', (data) => { if (currentUser && data.user_id === currentUser.id) loadUserInfo(currentUser.id); });
 
 document.addEventListener('DOMContentLoaded', function() {
     const savedUserId = localStorage.getItem('userId');
